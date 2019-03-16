@@ -62,12 +62,13 @@ int main() {
 
     int k;
     struct Matrix m;
-    struct Matrix* matrix;
-    matrix = &m;
+    struct Matrix* matrix = &m;
+
     struct Compress c;
     struct Compress* compress = &c;
     double* vector;
 
+    //10000 * 10000 * 0.1 = 1 000 000 -> a million non-zero elements
     matrix->width = 6;
     matrix->height = 6;
     k = 0.5 * matrix->width;
