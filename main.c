@@ -25,6 +25,12 @@ struct Matrix {
     int width;
 };
 
+struct Vector {
+
+    double* array;
+    int size;
+};
+
 int getRandomIntegerValue(int start, int end);
 double getRandomDoubleValue(double start, double end);
 
@@ -46,7 +52,9 @@ void testCRS(struct Matrix* matrix, struct Compress* compress);
 void testCCS(struct Matrix* matrix, struct Compress* compress);
 
 double* generateVector(int size);
-void multiplyMatrixByVector(struct Matrix* matrix, struct Compress* compress, double* vector);
+struct Vector* multiplyMatrixByVectorUsingCRS(struct Matrix* matrix, struct Compress* compress, double* vector);
+struct Vector* multiplyMatrixByVector(struct Matrix* matrix, double* vector);
+void compareMulResult(struct Vector* first, struct Vector* second);
 
 int main() {
 
@@ -58,6 +66,7 @@ int main() {
     matrix = &m;
     struct Compress c;
     struct Compress* compress = &c;
+    double* vector;
 
     matrix->width = 6;
     matrix->height = 6;
@@ -70,18 +79,22 @@ int main() {
 
     printMatrix(matrix);
     createCRC(matrix, compress);
-    multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
+
+    vector = generateVector(matrix->width);
+    struct Vector* CRSMulResult = multiplyMatrixByVectorUsingCRS(matrix, compress, vector);
+    struct Vector* naiveMulResult = multiplyMatrixByVector(matrix, vector);
+    compareMulResult(CRSMulResult, naiveMulResult);
 
     //createCCS(matrix);
 
     //kolumna po kolumnie
-    printf("Column by column:\n");
-    allocArray(matrix);
-    fillArray(matrix, k, COLUMN);
-
-    printMatrix(matrix);
-    createCRC(matrix, compress);
-    multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
+//    printf("Column by column:\n");
+//    allocArray(matrix);
+//    fillArray(matrix, k, COLUMN);
+//
+//    printMatrix(matrix);
+//    createCRC(matrix, compress);
+//    multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
 
     //createCCS(matrix);
 
@@ -398,16 +411,60 @@ double* generateVector(int size) {
     return arr;
 }
 
-void multiplyMatrixByVector(struct Matrix* matrix, struct Compress* compress, double* vector) {
+struct Vector* multiplyMatrixByVectorUsingCRS(struct Matrix* matrix, struct Compress* compress, double* vector) {
 
-    double* y = (double *)malloc(matrix->width * sizeof(double));
+    struct Vector v;
+    struct Vector* result = &v;
+    result->array = (double *)malloc(matrix->width * sizeof(double));
+    result->size = matrix->width;
 
     for (int i = 0; i < matrix->width; i++) {
-        y[i] = 0.f;
+        result->array[i] = 0.f;
         for (int j = compress->secondIdxArr[i]; j <= compress->secondIdxArr[i + 1] - 1; j++) {
-            y[i] += compress->valArr[j] * vector[compress->firstIdxArr[j]];
+            result->array[i] += compress->valArr[j] * vector[compress->firstIdxArr[j]];
         }
     }
 
-    printDoubleArray("A*x", y, matrix->width);
+    printDoubleArray("A*x using CRS:",  result->array, matrix->width);
+
+    return result;
 }
+
+struct Vector* multiplyMatrixByVector(struct Matrix* matrix, double* vector) {
+
+    struct Vector v;
+    struct Vector* result = &v;
+    result->array = (double *)malloc(matrix->width * sizeof(double));
+    result->size = matrix->width;
+
+    for (int i = 0; i < matrix->height; i++) {
+        result->array[i] = 0.f;
+        for (int j = 0; j < matrix->width; j++) {
+            if (matrix->array[i][j] > 0) {
+                result->array[i] += matrix->array[i][j] * vector[j];
+            }
+        }
+    }
+
+    printDoubleArray("A*x using naive:", result->array, matrix->width);
+
+    return result;
+}
+
+void compareMulResult(struct Vector* first, struct Vector* second) {
+
+    if (first->size != second->size) {
+        printf("Error, vector arent the same");
+        return;
+    }
+
+    for (int i = 0; i <first->size; i++) {
+        if (first->array[i] != second->array[i]) {
+            printf("Error, vector arent the same");
+            return;
+        }
+    }
+
+    printf("Vectors are the same");
+}
+
