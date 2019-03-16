@@ -61,7 +61,7 @@ int main() {
 
     matrix->width = 6;
     matrix->height = 6;
-    k = 0.7 * matrix->width;
+    k = 0.5 * matrix->width;
 
     //wiersz po wierszu
     printf("Row by row:\n");
@@ -70,17 +70,19 @@ int main() {
 
     printMatrix(matrix);
     createCRC(matrix, compress);
-    //multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
-    createCCS(matrix);
+    multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
+
+    //createCCS(matrix);
 
     //kolumna po kolumnie
-    //printf("Column by column:\n");
-    //allocArray(matrix);
-    //fillArray(matrix, k, COLUMN);
+    printf("Column by column:\n");
+    allocArray(matrix);
+    fillArray(matrix, k, COLUMN);
 
-    //printMatrix(matrix);
+    printMatrix(matrix);
+    createCRC(matrix, compress);
+    multiplyMatrixByVector(matrix, compress, generateVector(matrix->width));
 
-    //createCRC(matrix);
     //createCCS(matrix);
 
     getchar();
@@ -156,38 +158,6 @@ void fillArray(struct Matrix* matrix, int k, direction dir) {
             }
         }
     }
-
-    for (int i = 0; i< matrix->height; i++) {
-        for (int j = 0; j< matrix->width; j++) {
-            matrix->array[i][j] = 0.f;
-        }
-    }
-
-    matrix->array[0][0] = 10.0;
-    matrix->array[0][4] = 2.0;
-
-    matrix->array[1][0] = 3.0;
-    matrix->array[1][1] = 9.0;
-    matrix->array[1][5] = 3.0;
-
-    matrix->array[2][1] = 7.0;
-    matrix->array[2][2] = 8.0;
-    matrix->array[2][3] = 7.0;
-
-    matrix->array[3][0] = 3.0;
-    matrix->array[3][2] = 8.0;
-    matrix->array[3][3] = 7.0;
-    matrix->array[3][4] = 5.0;
-
-    matrix->array[4][1] = 8.0;
-    matrix->array[4][3] = 9.0;
-    matrix->array[4][4] = 9.0;
-    matrix->array[4][5] = 13.0;
-
-    matrix->array[5][1] = 4.0;
-    matrix->array[5][4] = 2.0;
-    matrix->array[5][5] = 1.0;
-
 }
 
 //MARK: Setter
@@ -291,7 +261,7 @@ void createCRC(struct Matrix* matrix, struct Compress* compress) {
     compress->secondIdxArr = realloc(compress->secondIdxArr, (compress->ptr + 1) * sizeof(int));
     compress->secondIdxArr[compress->ptr++] = compress->valPtr;
 
-    printf("CRC: \n");
+    printf("CRS: \n");
     printDoubleArray("val", compress->valArr, compress->valPtr);
     printIntegerArray("col_ind", compress->firstIdxArr, compress->valPtr);
     printIntegerArray("row_ptr", compress->secondIdxArr, compress->ptr);
@@ -431,21 +401,12 @@ double* generateVector(int size) {
 void multiplyMatrixByVector(struct Matrix* matrix, struct Compress* compress, double* vector) {
 
     double* y = (double *)malloc(matrix->width * sizeof(double));
-    int j;
-
-    printDoubleArray("Compress: ", compress->valArr, compress->valPtr);
 
     for (int i = 0; i < matrix->width; i++) {
         y[i] = 0.f;
-        printf("I: %d, compress->secondIdxArr[i]: %d, compress->secondIdxArr[i + 1] - 1: %d\n", i, compress->secondIdxArr[i], compress->secondIdxArr[i + 1] - 1);
-
         for (int j = compress->secondIdxArr[i]; j <= compress->secondIdxArr[i + 1] - 1; j++) {
-//   	     printf("%d", j);
-            //   	     printf("Compress->valArr[j] = %f\n", compress->valArr[j]);
-
-//   		 y[i] += compress->valArr[j] * vector[compress->firstIdxArr[j]];
+            y[i] += compress->valArr[j] * vector[compress->firstIdxArr[j]];
         }
-        printf("\n");
     }
 
     printDoubleArray("A*x", y, matrix->width);
